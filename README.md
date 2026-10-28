@@ -39,6 +39,21 @@ Original GOTY USA/Europe and German GOTY dumps are supported by the default
 [x] Custom Launcher
   - [x] Built in ISO extractor
 
+[x] Android build (arm64, Vulkan)
+  - [x] Install directly from the ISO
+  - [x] Touch controls with a layout editor
+  - [x] Controller button remapping
+
+## Android
+
+A native Android APK is available on the [Releases](../../releases) page. Install
+it, pick your Fable II ISO in the launcher, and play. It has resolution scaling,
+touch controls with a layout editor, controller remapping and a bundled Turnip
+driver, and runs at about 29 FPS at native 720p on a Snapdragon 8 Gen 2 handheld.
+
+See [android/README.md](android/README.md) for requirements, setup, settings,
+troubleshooting and build instructions.
+
 ## Windows launcher
 
 The optional WPF launcher detects the original game edition and configures
