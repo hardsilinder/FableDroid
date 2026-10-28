@@ -114,10 +114,19 @@ endmacro()
 # codegen, including one a project assembles itself rather than taking the
 # library rexglue_setup_target() builds. The stamp comes first: the DEPFILE
 # names it.
+if(CMAKE_CROSSCOMPILING)
+    if(NOT FABLE2_CODEGEN_TOOL)
+        message(FATAL_ERROR "Set FABLE2_CODEGEN_TOOL to the host rexglue executable")
+    endif()
+    set(REXGLUE_CODEGEN_COMMAND "${FABLE2_CODEGEN_TOOL}")
+else()
+    set(REXGLUE_CODEGEN_COMMAND $<TARGET_FILE:rex::rexglue>)
+endif()
+
 add_custom_command(
     OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/codegen.build.stamp"
            ${REXGLUE_ENTRYPOINT_GENERATED_SOURCES}
-    COMMAND $<TARGET_FILE:rex::rexglue> codegen ${CMAKE_CURRENT_SOURCE_DIR}/fable_2_manifest.toml
+    COMMAND ${REXGLUE_CODEGEN_COMMAND} codegen ${CMAKE_CURRENT_SOURCE_DIR}/fable_2_manifest.toml
     DEPFILE "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/codegen.d"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Generating recompiled code for fable_2"

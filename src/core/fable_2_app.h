@@ -178,6 +178,34 @@ class Fable2App : public rex::ReXApp {
       }
     }
 
+    // Cyan sky / missing world fix (ANDROID_STATUS.md, 2026-10-27): before the
+    // main pass the game aliases the main D24FS8 depth as D24S8 4xMSAA for
+    // stencil passes with an unbounded window. On hardware that is a lossless
+    // bit reinterpretation; host render targets convert float24 <-> unorm24
+    // across the whole EDRAM, so far-plane depth drifts, the GEQUAL sky fails
+    // and stale EDRAM shows through. Skipping depth->depth format-change
+    // transfers keeps the main depth target's own (unmodified) contents.
+    if (rex::cvar::GetFlagSource("rt_transfer_skip_mask") == rex::cvar::Source::kDefault) {
+      if (rex::cvar::SetFlagByName("rt_transfer_skip_mask", "4")) {
+        REXSYS_INFO("[fable2-config] seeded rt_transfer_skip_mask=4 (depth format aliasing)");
+      } else {
+        REXSYS_WARN("[fable2-config] rt_transfer_skip_mask missing (SDK without it?)");
+      }
+    }
+
+    // Performance (measured on Adreno 740, gameplay 4.5 -> 7.2 fps, visuals
+    // unchanged): upload shared memory ahead of the frame's command buffer
+    // instead of breaking render passes for in-order uploads, and don't block
+    // the GPU thread every frame copying memexport results back to the CPU.
+    for (auto [name, value] : {std::pair{"vulkan_shared_memory_upload_first", "true"},
+                               std::pair{"readback_memexport", "false"}}) {
+      if (rex::cvar::GetFlagSource(name) == rex::cvar::Source::kDefault) {
+        if (rex::cvar::SetFlagByName(name, value)) {
+          REXSYS_INFO("[fable2-config] seeded {}={} (performance)", name, value);
+        }
+      }
+    }
+
     // Feed the F3 debug overlay with guest FPS (below). The GPU plugin
     // records per-guest-swap frame timing into the shared perf registry
     // (rex::perf, state lives in rexruntime.dll and is shared with the
@@ -302,12 +330,21 @@ class Fable2App : public rex::ReXApp {
   // init so load/create/parse problems land in logs/ (see src/core/fable2_config.h).
   // Plain settings are read via fable2::config::Get(); settings that back a
   // cvar are seeded into it below so the console/overlay keep working.
+  static std::filesystem::path StorageFolder() {
+#ifdef __ANDROID__
+    if (const char* storage = std::getenv("REX_ANDROID_STORAGE_DIR")) {
+      return storage;
+    }
+#endif
+    return rex::filesystem::GetExecutableFolder();
+  }
+
   void OnPostInitLogging() override {
     // This describes the linked build, not a guarantee about DLLs replaced later.
     REXSYS_INFO("[native-build] configuration={} linked_sdk={}",
                 FABLE2_NATIVE_CONFIGURATION, FABLE2_NATIVE_SDK);
     const std::filesystem::path exe_dir =
-        rex::filesystem::GetExecutableFolder();
+        StorageFolder();
     fable2::config::Load(exe_dir / "fable2_config.toml");
 
     // Seed cvars from the config. Only when the cvar is still at its
@@ -515,7 +552,7 @@ class Fable2App : public rex::ReXApp {
   // Override the content location with --game_data_root=<path>.
   void OnConfigurePaths(rex::PathConfig& paths) override {
     const std::filesystem::path exe_dir =
-        rex::filesystem::GetExecutableFolder();
+        StorageFolder();
 
     if (paths.game_data_root.empty()) {
       if (std::filesystem::is_regular_file(exe_dir / "default.xex")) {

@@ -44,9 +44,18 @@
 //   0x822426E0  wait loop: GpuProgressCheck_82B9BF90 (0 = ready -> leave),
 //               else re-run the readiness test and spin while not ready.
 //   0x8224270C  call sub_82B9BEC8(r1+80), then the epilogue at 0x82242714.
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include <thread>
+#endif
 
 #include "fable_2_pch.h"
+#include <rex/cvar.h>
+
+REXCVAR_DEFINE_UINT32(frame_wait_sleep_us, 0, "CPU",
+                     "Host sleep between GPU progress polls; zero uses yield")
+    .range(0, 1000);
 
 extern "C" void FastHelper_821E8D20(PPCContext& ctx, uint8_t* base);
 extern "C" void GpuProgressCheck_82B9BF90(PPCContext& ctx, uint8_t* base);
@@ -168,8 +177,17 @@ void BuildArgBlock(PPCContext& ctx, uint8_t* base) {
 void SpinPause() {
   // WaitForSingleObjectEx expects 100-ns units; 0 means "no timeout", so
   // bump anything below that to one 100-ns quantum.
+#ifdef _WIN32
   const uint32_t hundredNs = kPauseNs / 100;
   WaitForSingleObjectEx(nullptr, hundredNs > 0 ? hundredNs : 1, TRUE);
+#else
+  const auto sleep_us = REXCVAR_GET(frame_wait_sleep_us);
+  if (sleep_us) {
+    std::this_thread::sleep_for(std::chrono::microseconds(sleep_us));
+  } else {
+    std::this_thread::yield();
+  }
+#endif
 }
 
 // addi r1,r1,144; b __restgprlr_29 (0x82242714).

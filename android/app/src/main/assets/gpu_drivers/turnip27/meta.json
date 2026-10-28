@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "name": "Mesa Turnip v27.0.0-20261027-r3",
+  "description": "A6xx/A7xx Turnip driver from Mesa main (git c2d85da). KGSL build. A8xx experimental.",
+  "author": "The412Banner",
+  "packageVersion": "3",
+  "vendor": "Mesa",
+  "driverVersion": "Vulkan 1.4.363",
+  "minApi": 28,
+  "libraryName": "libvulkan_freedreno.so"
+}

@@ -4,13 +4,15 @@
 
 // F5 -> run external Lua file. Must be included before fable_2_app.h (which
 // pulls in keyboard_gamepad.h, which calls fable2::f5lua::poll_f5() per frame).
+#ifdef _WIN32
 #include "fable2_f5_lua.h"
+#endif
 
 #include "fable_2_app.h"
+#ifdef _WIN32
 #include "fps_meter.h"
 #include "fable2_text_probe.h"
 #include "fable2_glyph_probe.h"
-#include "fable2_hotfuncs.h"
 #include "fable2_heap_scan.h"
 #include "fable2_text_append.h"
 #include "fable2_state_probe.h"
@@ -19,6 +21,8 @@
 #include "fable2_av_probe.h"  // self-installs a guest-PC AV logger (VEH)
 #include "fable2_stall_dump.h"  // self-installs a render-stall thread dumper
 // #include "fable2_ui_render_probe.h"
+#include "fable2_hotfuncs.h"
+#endif
 #include "keyboard_gamepad.h"
 
 #include <rex/cvar.h>

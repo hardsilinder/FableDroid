@@ -98,6 +98,13 @@
 //     if (thresholdMet) { /* indirect call via vtable */ } else YieldAndCheckThreshold();
 //   }
 #include "fable_2_pch.h"
+#include <rex/cvar.h>
+#include <chrono>
+#include <thread>
+
+REXCVAR_DEFINE_UINT32(game_idle_sleep_us, 0, "CPU",
+                     "Host sleep on the game frame loop's no-work yield path")
+    .range(0, 1000);
 
 extern "C" void CallActivePlayerMethod_821A11E8(PPCContext& ctx, uint8_t* base);
 extern "C" void ConstructRefCounted_8222CF18(PPCContext& ctx, uint8_t* base);
@@ -1081,6 +1088,11 @@ extern "C" void ProcessGameFrame_82276C30(PPCContext& __restrict ctx, uint8_t* b
 	// bl 0x82cbd098
 	ctx.lr = 0x8227720C;
 	Yield_82CBD098(ctx, base);
+	// Only the no-work path pauses; preserve the guest yield and all its
+	// register/barrier side effects before polling the frame threshold again.
+	if (const auto sleep_us = REXCVAR_GET(game_idle_sleep_us)) {
+		std::this_thread::sleep_for(std::chrono::microseconds(sleep_us));
+	}
 	}
 	check_loop_backedge(ctx, base);
 	} while (!ctx.cr6.eq);

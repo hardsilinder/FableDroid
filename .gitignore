@@ -71,3 +71,19 @@ thirdparty/android-ndk/
 # --- Historical reference (pre-ReXGlue XenonRecomp configs) -------------------
 XenonRecomp
 TODO.md
+
+# --- Android port -------------------------------------------------------------
+# Build helpers and launcher icons are tracked despite the *.py / *.png rules.
+!android/*.py
+!android/app/src/main/res/mipmap-*/*.png
+!docs/screenshots/android-*.png
+# The game-data symlink used for local testing (/data/ above only matches a dir).
+/data
+*.iso
+*.xex
+# Release signing material never leaves the build machine.
+keystore.properties
+*.jks
+*.keystore
+android/.idea/
+delivery/

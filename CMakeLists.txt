@@ -39,11 +39,13 @@ if(FABLE2_CODEGEN_TOOL)
     endif()
     # The official tool must keep its own runtime. Host headers, integration
     # sources and libraries come from the matched source-built SDK instead.
+    if(NOT REXSDK_DIR)
     set_target_properties(rex::rexglue PROPERTIES
         IMPORTED_LOCATION "${FABLE2_CODEGEN_TOOL}"
         IMPORTED_LOCATION_DEBUG "${FABLE2_CODEGEN_TOOL}"
         IMPORTED_LOCATION_RELWITHDEBINFO "${FABLE2_CODEGEN_TOOL}"
         IMPORTED_LOCATION_RELEASE "${FABLE2_CODEGEN_TOOL}")
+    endif()
     # A staged package still contains the official SDK's other configurations.
     # Reject selecting those by accident via an old/manual CMake cache.
     get_filename_component(FABLE2_PACKAGE_ROOT "${rexglue_DIR}/../../.." ABSOLUTE)
@@ -83,6 +85,11 @@ set(FABLE2_SOURCES
 
 if(WIN32)
     add_executable(fable_2 WIN32 ${FABLE2_SOURCES})
+elseif(ANDROID)
+    # SDLActivity loads libmain.so and calls its SDL_main.
+    add_library(fable_2 SHARED ${FABLE2_SOURCES})
+    set_target_properties(fable_2 PROPERTIES OUTPUT_NAME main)
+    target_link_libraries(fable_2 PRIVATE android log)
 else()
     add_executable(fable_2 ${FABLE2_SOURCES})
 endif()
@@ -103,6 +110,30 @@ endif()
 # per-configuration variant: rexgpu-xenosd.dll for Debug, rexgpu-xenos.dll
 # for Release). Without it the game runs with no GPU emulation.
 rexglue_setup_target(fable_2 GPU_PLUGINS xenos)
+if(ANDROID)
+    # Registration is one enormous one-time startup function. Optimizing its
+    # tens of thousands of virtual calls consumes minutes without improving
+    # gameplay. Keep all translated guest functions at the Release -O3 level.
+    set_source_files_properties(
+        "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/fable_2_register.cpp"
+        PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+    set_property(SOURCE
+        "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/fable_2_register.cpp"
+        APPEND PROPERTY COMPILE_OPTIONS -O0)
+    add_custom_command(
+        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/android_registration.stamp"
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/android/chunk_registration.py"
+            "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/fable_2_register.cpp"
+        COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_CURRENT_BINARY_DIR}/android_registration.stamp"
+        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/codegen.build.stamp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/android/chunk_registration.py"
+        VERBATIM)
+    add_custom_target(fable2_android_registration
+        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/android_registration.stamp")
+    add_dependencies(fable_2_recomp fable2_android_registration)
+endif()
+
 add_custom_command(TARGET fable_2 POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${CMAKE_CURRENT_BINARY_DIR}/fable2_build.json"

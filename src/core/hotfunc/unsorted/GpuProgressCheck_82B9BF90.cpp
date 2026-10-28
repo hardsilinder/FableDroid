@@ -7,6 +7,9 @@
 #include "fable_2_pch.h"
 #include "fable_2_funcs.284.h"
 
+extern "C" void GetGlobalField_8221EE38(PPCContext&, uint8_t*);
+extern "C" void sub_82BA0E80(PPCContext&, uint8_t*);
+
 extern "C" void GpuProgressCheck_82B9BF90(PPCContext& __restrict ctx, uint8_t* base) {
 	REX_FUNC_PROLOGUE();
 	uint32_t ea{};
