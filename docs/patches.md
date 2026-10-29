@@ -25,7 +25,7 @@ of Xenia's game-patches (`patch.toml`) format.
 - Every op is logged: `[patches] <patch> be8 0xADDR: 0xOLD -> 0xNEW
   (data: takes effect at runtime)`, plus a summary line.
 
-## Current patches (both default to **disabled**)
+## Current patches (both default to **enabled on Android**, disabled elsewhere; 2026-10-28, input delay)
 
 | Config key | Xenia patch | Data op (this table) | Code op (mid-asm hook) |
 |---|---|---|---|
@@ -133,7 +133,7 @@ original `__imp__` entry). Enabled with `FABLE2_FPS_METER=1`.
    different revision): 1280x720 (be16 0x8238DF5A=0x0500), Disable MSAA
    (be8 0x8238DF3F=0x01; ported 2026-10-28 as the override
    src/core/hotfunc/unsorted/RenderConfigInit_8238DE58.cpp, cvar
-   fable2_disable_msaa; these two addresses DO match this build), Disable Texture Morphing (be16 0x8220EF10=0x4280),
+   fable2_disable_msaa; these two addresses DO match this build), Disable Texture Morphing (be16 0x8220EF10=0x4280; ported 2026-10-28 as mid-asm hook fable2_hook_disable_texture_morphing with jump_address_on_true=0x8220F08C, [patches] disable_texture_morphing, default on for Android only; the address matches this build),
    21:9 / 32:9 widescreen — all .text/data-in-.text, so expect the same "applied
    but inert" behavior for their code ops if applied to the guest image.
 3. **Oddity worth investigating (separate issue):** the recompiled C++ for

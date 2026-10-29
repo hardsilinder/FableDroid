@@ -37,7 +37,12 @@ public final class LauncherActivity extends Activity {
         getWindow().setStatusBarColor(Ui.BACKGROUND);
         getWindow().setNavigationBarColor(Ui.BACKGROUND);
         new Thread(() -> {
-            try { Settings.installBundledDriver(this); }
+            try {
+                Settings.installBundledDriver(this);
+                if (BuildConfig.DEBUG && getIntent().getBooleanExtra("benchmark", false))
+                    runOnUiThread(() -> { if (!isFinishing() && !isDestroyed() && gameReady())
+                        startActivity(new Intent(this, GameActivity.class).putExtra("benchmark", true)); });
+            }
             catch (IOException error) { runOnUiThread(() -> toast("GPU driver install failed: " + error.getMessage())); }
         }, "DriverInstall").start();
         build();
@@ -85,6 +90,9 @@ public final class LauncherActivity extends Activity {
         playButton = Ui.primary(this, "Play");
         playButton.setOnClickListener(v -> play());
         left.addView(playButton, Ui.fill(this, 12));
+        left.addView(Ui.row(this, "Skip intro videos",
+            "Starts at the title screen without the Microsoft Game Studios and Lionhead logos.",
+            Ui.toggle(this, settings.skipIntros(), on -> settings.put("skip_intros", on))));
         cancelButton = Ui.secondary(this, "Cancel import");
         cancelButton.setVisibility(View.GONE);
         cancelButton.setOnClickListener(v -> { cancelImport = true; cancelButton.setEnabled(false); });
@@ -101,6 +109,9 @@ public final class LauncherActivity extends Activity {
         half2.leftMargin = Ui.dp(this, 10);
         imports.addView(zipButton, half2);
         left.addView(imports, Ui.fill(this, 10));
+        Button drivers = Ui.secondary(this, "GPU drivers / downloads");
+        drivers.setOnClickListener(v -> startActivity(new Intent(this, DriverActivity.class)));
+        left.addView(drivers, Ui.fill(this, 10));
 
         ScrollView leftScroll = new ScrollView(this);
         leftScroll.addView(left);
@@ -146,12 +157,18 @@ public final class LauncherActivity extends Activity {
         graphics.addView(Ui.row(this, "Anti-aliasing (MSAA)",
             "Smoother edges at a large performance cost. Off is recommended on handhelds.",
             Ui.toggle(this, settings.msaa(), on -> settings.put("msaa", on))));
+        graphics.addView(Ui.row(this, "Smooth edges (FXAA)",
+            "Softens jagged edges and the blocky grass and foliage pattern for about 1% frame rate. Recommended with MSAA off.",
+            Ui.toggle(this, settings.fxaa(), on -> settings.put("fxaa", on))));
+        graphics.addView(Ui.row(this, "Fine foliage pattern",
+            "With MSAA off, draws grass and leaf edges with a finer 4x4 pattern instead of the blocky 2x2 one. No measurable cost.",
+            Ui.toggle(this, settings.fineFoliage(), on -> settings.put("fine_foliage", on))));
         graphics.addView(Ui.row(this, "Triple buffering",
-            "Steadier frame pacing for one extra frame of input latency.",
+            "Allows one more queued frame. May add input latency; leave off unless it improves your experience.",
             Ui.toggle(this, settings.tripleBuffering(), on -> settings.put("triple_buffering", on))));
-        graphics.addView(Ui.row(this, "Bundled Turnip GPU driver",
-            "Mesa Turnip for Adreno 6xx/7xx, much faster than most stock drivers. Turn off to use the system driver.",
-            Ui.toggle(this, settings.bundledDriver(), on -> settings.put("bundled_driver", on))));
+        graphics.addView(Ui.row(this, "Low latency mode",
+            "Stops the game queuing frames ahead of the GPU: about 15 ms less input lag. With the current renderer it costs no measurable frame rate. Recommended.",
+            Ui.toggle(this, settings.lowLatency(), on -> settings.put("low_latency", on))));
         column.addView(graphics);
 
         LinearLayout controls = Ui.card(this);

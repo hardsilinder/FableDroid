@@ -13,6 +13,7 @@
 
 #include <rex/ppc/context.h>  // PPCRegister (union with u64/s64/u32/... views)
 #include <rex/logging/macros.h>
+#include <rex/cvar.h>
 
 #include <string>
 
@@ -130,8 +131,13 @@ void fable2_hook_disable_motion_blur(PPCRegister& f12) {
 // terminator", so the loop is skipped and no intro video is queued. Harry's
 // original NOPs the slot-0 construction instead; the hook leaves all three
 // strings constructed and released normally. Runs once per boot.
+// fable2_skip_intros is the launcher's "Skip intro videos" switch (fable_2.toml);
+// either it or [patches] skip_intro_videos turns the skip on.
+REXCVAR_DEFINE_BOOL(fable2_skip_intros, false, "General",
+                    "Skip the Microsoft Game Studios and Lionhead intro videos");
+
 void fable2_hook_skip_intro_videos(PPCRegister& r3) {
-  if (fable2::config::Get().skip_intro_videos) {
+  if (fable2::config::Get().skip_intro_videos || REXCVAR_GET(fable2_skip_intros)) {
     r3.u64 = 0;
   }
 }
@@ -530,6 +536,40 @@ static void legacy_orbit_2axis(rex::memory::Memory* mem, uint32_t cam,
       mem, cam + uint32_t(cfg.camera_rot_tgt_off), q_new);
   fable2::mouselook::write_guest_quat(
       mem, cam + uint32_t(cfg.camera_rot_cur_off), q_new);
+}
+
+// High Tick Rate Stairs & Ledge Fix (Xenia patch by Ultra, be32 0x82E41F54 =
+// `li r11, 1`). hkpCharacterProxy::integrate (sub_82E41E00) loads its substep
+// count into r11 at 0x82E41F54; with the LF tick doubled, more than one
+// substep wedges the hero on stairs and ledges. Cap it at 1.
+void fable2_hook_tick_rate_stairs_fix(PPCRegister& r11) {
+  static const bool enabled = [] {
+    const auto& cfg = fable2::config::Get();
+    const bool on = cfg.high_tick_rate && cfg.high_tick_rate_stairs_fix;
+    if (on) {
+      REXSYS_INFO("[tick-rate] character proxy capped to 1 substep (stairs/ledge fix)");
+    }
+    return on;
+  }();
+  if (enabled) {
+    r11.u64 = 1;
+  }
+}
+
+// Disable Texture Morphing (Xenia Canary patch by Guy, be16 0x8220EF10 =
+// 0x4280). Runs before `beq cr6, 0x8220F08C` in sub_8220EC00 and takes the
+// branch unconditionally, skipping the TextureMorphs block. On the Vulkan
+// backend the realtime morph output is not picked up, so morphed hero/dog
+// skins come out pure black; the base textures render correctly.
+bool fable2_hook_disable_texture_morphing() {
+  static const bool enabled = [] {
+    const bool on = fable2::config::Get().disable_texture_morphing;
+    if (on) {
+      REXSYS_INFO("[texture-morph] texture morphing disabled (Xenia patch port)");
+    }
+    return on;
+  }();
+  return enabled;
 }
 
 // Realtime Texture Morphing (hero/dog black textures without CPU readback;

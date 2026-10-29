@@ -50,3 +50,8 @@ android {
         variant.outputs.all { outputFileName = "Fable2-Android-${variant.versionName}-${variant.buildType.name}.apk" }
     }
 }
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20240303'
+}

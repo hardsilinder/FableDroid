@@ -37,7 +37,7 @@ a disc image (ISO) of a supported version, and the launcher installs it on the d
 - Resolution scale: 1x (native 1120×720), 2x, 3x.
 - Anti-aliasing (MSAA) on/off.
 - Triple buffering on/off.
-- Bundled Mesa Turnip GPU driver for Adreno 6xx/7xx (on by default), or the system driver.
+- GPU driver manager on the opening screen: bundled/system selection, plus verified Turnip downloads and automatic installation.
 - Tuned renderer defaults for Adreno, written to the game config on every launch.
 
 **Controls**
@@ -52,7 +52,7 @@ a disc image (ISO) of a supported version, and the launcher installs it on the d
   plugged in or removed), Always or Off.
 
 **Game**
-- Playable start to finish (see the main README for the desktop project's status).
+- Playable start to finish (see [the desktop project README](../docs/FABLE2_RECOMP_README.md) for its status).
 - Saves and settings stay on the device and survive reinstalling the game files.
 - Persistent shader cache: shaders compile once, then load at boot on later launches.
 
@@ -94,7 +94,7 @@ tells you which version it detected.
 
 ## Installing
 
-1. **Install the APK.** Download `Fable2-Android-<version>-release.apk` from the
+1. **Install the APK.** Build the APK (see below) or, once one is published, download `Fable2-Android-<version>-release.apk` from the
    [Releases](../../releases) page and open it on the device. Allow installing from
    your browser or file manager if Android asks.
 2. **Copy your ISO to the device.** Any folder works, for example `Download`. Use USB,
@@ -124,8 +124,8 @@ All settings are in the launcher and apply the next time you tap **Play**.
 |---|---|---|
 | Resolution scale | 1x | Internal render resolution. 1x is the Xbox 360's own 1120×720. 2x and 3x are experimental and need far more GPU power than current handhelds have. |
 | Anti-aliasing (MSAA) | Off | The game's own 2x MSAA. Costs about 5 FPS on an Adreno 740. |
-| Triple buffering | Off | Lets the CPU queue one more frame. Measured no faster on the Thor and adds a frame of input latency, so it is off by default. |
-| Bundled Turnip GPU driver | On | Uses Mesa Turnip (bundled) instead of the phone's driver. Much faster and more correct on Adreno. Turn off on non-Adreno GPUs or to compare. |
+| Triple buffering | Off | Allows one more queued frame, which can increase latency. No repeatable throughput benefit established on Thor; physical input-to-display latency has not been measured. |
+| GPU drivers / downloads | Bundled Turnip | Choose bundled, system, or an installed download. Use System for non-Adreno GPUs. Driver performance depends on hardware and workload. |
 | Touch controls | Auto | Auto shows them only when no gamepad is connected. |
 | Touch opacity / size | 60% / 100% | Appearance of the on-screen controls. |
 | Vibrate on touch | On | Short haptic tick on each touch press. |
@@ -192,7 +192,7 @@ Details of the performance work are in [docs/ANDROID_PERFORMANCE.md](../docs/AND
 | "This disc image has no default.xex" | The file isn't a Fable II game disc (for example a bonus or video disc). |
 | "Not enough free space" | Free up the amount shown. You need the full game size plus 256 MB. |
 | Install fails partway | Make sure the ISO is a complete copy (about 7.8 GB). Tap **Select game ISO** to retry; saves are not touched. |
-| Black screen or crash on a non-Adreno GPU (Mali, Xclipse, PowerVR) | Turn **Bundled Turnip GPU driver** off. Turnip only supports Adreno. |
+| Black screen or crash on a non-Adreno GPU (Mali, Xclipse, PowerVR) | Choose **GPU drivers / downloads → System driver**. Turnip only supports Adreno. |
 | White screen right after starting | That's the intro fading in. Press A/Enter or wait. |
 | Hitches the first time you enter an area | Shader compilation. They go away once the shader cache has been built. |
 | Touch controls don't show | Touch mode is Auto and a gamepad is connected. Set it to On. |
@@ -309,3 +309,13 @@ SDL's Android Java classes come from the SDK's SDL3 submodule; they are not copi
 - **libadrenotools** — BSD 2-Clause, © Billy Laws.
 - **SDL3** — zlib license.
 - This project's own code is under the license in the repository root.
+
+### Downloading GPU drivers
+
+Open **GPU drivers / downloads** on the launcher, then **Check for driver downloads**. Select a package to download, verify, install, and use it on the next launch. Packages come from [StevenMXZ’s release page](https://github.com/StevenMXZ/Adreno-Tools-Drivers/releases); only Turnip ZIPs with published SHA-256 digests are listed. Gen8 packages target Adreno 8xx; the Thor has Adreno 740. Package names are shown so you can choose the hardware variant. Android/API and ARM64 checks do not guarantee GPU compatibility.
+
+The bundled driver remains available. Failed downloads or validation leave the selected driver unchanged. Go back during a download to cancel it. Driver downloads require internet access; the game and installed driver selection work offline. No background automatic update replaces your selection.
+
+### Development benchmarks
+
+Debug APKs accept `--ez benchmark true` on LauncherActivity to start the game without rewriting the benchmark TOML. Release APKs ignore it. This path enables touch controls for the existing test harness without changing saved preferences. Use `THOR_BENCHMARK=1` with the workspace preservation wrapper; keep its save/config backup and restoration checks. This is a test facility, not a release performance setting.

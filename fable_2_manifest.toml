@@ -214,6 +214,29 @@ name = "fable2_hook_realtime_texture_morphing"
 registers = ["r9"]
 after_instruction = true
 
+# Disable Texture Morphing (Xenia patch by Guy: be16 0x8220EF10 = 0x4280, i.e.
+# `beq cr6, 0x8220F08C` -> `b 0x8220F08C`). In sub_8220EC00 (appearance
+# update) this branch skips the TextureMorphs block when r18 == 0; the patch
+# makes it unconditional. The hook runs BEFORE the branch and, while
+# [patches] disable_texture_morphing is true, jumps straight to its target.
+# High Tick Rate Stairs & Ledge Fix (Xenia patch by Ultra: be32 0x82E41F54 =
+# 0x39600001, `lwz r11, 0(r11)` -> `li r11, 1`). In sub_82E41E00
+# (hkpCharacterProxy::integrate) r11 is the substep count loaded from
+# this+172; capping it at 1 stops the character wedging on stairs and ledges
+# at the 30 Hz LF tick. Runs after the load; active only with [patches]
+# high_tick_rate and high_tick_rate_stairs_fix both true.
+[[entrypoint.midasm_hook]]
+address = 0x82E41F54
+name = "fable2_hook_tick_rate_stairs_fix"
+registers = ["r11"]
+after_instruction = true
+
+[[entrypoint.midasm_hook]]
+address = 0x8220EF10
+name = "fable2_hook_disable_texture_morphing"
+registers = []
+jump_address_on_true = 0x8220F08C
+
 # Conservative settings: no register optimizations
 skip_lr = true
 skip_msr = true

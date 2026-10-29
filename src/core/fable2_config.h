@@ -169,11 +169,24 @@ struct Values {
   // [patches] high_tick_rate: LF tick 15 -> 30 Hz (Xenia "High Tick Rate" by
   // Guy; data write in src/core/fable2_patches.cpp + hook
   // fable2_hook_high_tick_rate_skip_store). false = original.
+#if defined(__ANDROID__)
+  bool high_tick_rate = true;  // input delay: game reads input at the LF tick
+#else
   bool high_tick_rate = false;
+#endif
   // [patches] higher_hf_tick_rate: HF tick 30 -> 60 Hz (Xenia "Higher HF Tick
   // Rate" by Ultra; data write in src/core/fable2_patches.cpp + hook
   // fable2_hook_high_hf_tick_rate_skip_store). Requires high_tick_rate.
+#if defined(__ANDROID__)
+  bool higher_hf_tick_rate = true;  // keeps the 2:1 HF:LF ratio with high_tick_rate
+#else
   bool higher_hf_tick_rate = false;
+#endif
+  // [patches] high_tick_rate_stairs_fix: Xenia "High Tick Rate Stairs & Ledge
+  // Fix" (Ultra): caps hkpCharacterProxy::integrate to 1 substep so the 30 Hz
+  // LF tick does not wedge the hero on stairs and ledges (hook
+  // fable2_hook_tick_rate_stairs_fix). Only acts with high_tick_rate on.
+  bool high_tick_rate_stairs_fix = true;
   // [patches] disable_motion_blur: zero the full-screen motion blur amount the
   // camera passes to the renderer (hook fable2_hook_disable_motion_blur in
   // src/core/fable2_hooks.cpp). false = original.
@@ -185,6 +198,17 @@ struct Values {
   // src/core/fable2_hooks.cpp; plans/hero-dog-realtime-texture-morphing.md).
   // Replaces hero_dog_texture_readback. false = original.
   bool realtime_texture_morphing = true;
+  // [patches] disable_texture_morphing: port of Xenia's "Disable Texture
+  // Morphing" patch (Guy; be16 0x8220EF10 = 0x4280). Skips the TextureMorphs
+  // block in sub_8220EC00, so the hero/dog keep their base skin textures
+  // instead of morphed ones that come out black when the realtime mode is not
+  // honoured by the host GPU backend (Vulkan). Hook
+  // fable2_hook_disable_texture_morphing. Default on for Android only.
+#if defined(__ANDROID__)
+  bool disable_texture_morphing = true;
+#else
+  bool disable_texture_morphing = false;
+#endif
   // Force a CPU readback of the render-to-texture resolve that (re)generates
   // the hero/dog face+skin texture, so the character does not render black on
   // a split-memory host (see plans/hero-dog-texture-readback.md). Approach + the

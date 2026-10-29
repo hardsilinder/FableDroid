@@ -193,6 +193,16 @@ class Fable2App : public rex::ReXApp {
       }
     }
 
+    // Performance (ANDROID_STATUS.md, 2026-10-29): the D3D clear quad (this
+    // vertex shader, rectangle list, depth/stencil always-write, no color) is
+    // drawn at 4x MSAA over the whole EDRAM between 1x shadow passes. It
+    // overwrites every sample, so copying the old depth into it is skipped.
+    if (rex::cvar::GetFlagSource("rt_clear_quad_vs_hashes") == rex::cvar::Source::kDefault) {
+      if (rex::cvar::SetFlagByName("rt_clear_quad_vs_hashes", "1E6883FCCDE1F688")) {
+        REXSYS_INFO("[fable2-config] seeded rt_clear_quad_vs_hashes=1E6883FCCDE1F688");
+      }
+    }
+
     // Performance (measured on Adreno 740, gameplay 4.5 -> 7.2 fps, visuals
     // unchanged): upload shared memory ahead of the frame's command buffer
     // instead of breaking render passes for in-order uploads, and don't block

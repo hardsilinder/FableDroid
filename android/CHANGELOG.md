@@ -1,3 +1,9 @@
+## Unreleased
+
+- Added launcher GPU driver downloads, SHA-256 verification, bounded installation, installed-driver selection, and system/bundled fallback choices.
+- Added a debug-only benchmark launch path that preserves test configuration and enables test touch controls without changing preferences.
+- Corrected triple-buffering wording: input-to-display latency has not been measured.
+
 # Android changelog
 
 ## 1.0.0 — 2026-10-28

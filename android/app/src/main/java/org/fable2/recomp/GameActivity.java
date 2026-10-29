@@ -24,7 +24,8 @@ public final class GameActivity extends SDLActivity {
         super.onCreate(state);
         Settings settings = new Settings(this);
         buttonMap = settings.buttonMap();
-        touchMode = settings.touchMode();
+        touchMode = BuildConfig.DEBUG && getIntent().getBooleanExtra("benchmark", false)
+            ? Settings.TOUCH_ALWAYS : settings.touchMode();
         if (touchMode != Settings.TOUCH_OFF) {
             touchControls = new TouchControls(this, false);
             mLayout.addView(touchControls, new ViewGroup.LayoutParams(

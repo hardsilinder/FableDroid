@@ -187,8 +187,9 @@ skip_intro_videos = false
 # fable2_hook_high_tick_rate_skip_store): doubles the game's LF tick from
 # 15 Hz to 30 Hz. Vastly improves in-game UI framerate and input delay.
 # Use together with higher_hf_tick_rate. false = original 15 Hz.
-# Default: false
-high_tick_rate = false
+# Measured on the AYN Thor (2026-10-28): 25.5 -> 25.0 FPS, about 2% cost.
+# Default: true on Android, false elsewhere (leave commented for the default)
+# high_tick_rate = true
 
 # Higher HF Tick Rate (Xenia patch by Ultra, plus mid-asm hook
 # fable2_hook_high_hf_tick_rate_skip_store): doubles the HF tick from 30 Hz to
@@ -196,8 +197,15 @@ high_tick_rate = false
 # both run at 30 Hz and cloth physics misbehaves. Turn this on whenever
 # high_tick_rate is on. Requires high_tick_rate: ignored when that is false.
 # false = original 30 Hz.
-# Default: false
-higher_hf_tick_rate = false
+# Default: true on Android, false elsewhere (leave commented for the default)
+# higher_hf_tick_rate = true
+
+# High Tick Rate Stairs & Ledge Fix (Xenia patch by Ultra, mid-asm hook
+# fable2_hook_tick_rate_stairs_fix): caps the character controller to one
+# physics substep so the faster LF tick does not wedge the hero on stairs and
+# ledges. Only acts while high_tick_rate is true.
+# Default: true
+high_tick_rate_stairs_fix = true
 
 # Disable Motion Blur (mid-asm hook fable2_hook_disable_motion_blur): the
 # camera's full-screen motion blur amount (what scripts set via Camera.SetBlur)
@@ -216,6 +224,14 @@ disable_motion_blur = false
 # plans/hero-dog-realtime-texture-morphing.md. false = original baked mode.
 # Default: true
 realtime_texture_morphing = true
+
+# Disable Texture Morphing (port of the Xenia Canary patch by Guy, be16
+# 0x8220EF10 = 0x4280; mid-asm hook fable2_hook_disable_texture_morphing):
+# skips the TextureMorphs block, so the hero and dog use their base skin
+# textures (no aging/morality/scar morphs) instead of morphed textures that
+# render pure black on the Vulkan backend. true = skip morphing.
+# Default: true on Android, false elsewhere (leave commented for the default)
+# disable_texture_morphing = true
 
 # Force a CPU readback of the render-to-texture resolve that regenerates the
 # hero/dog face+skin texture, so the character does not render black on a
@@ -408,12 +424,18 @@ bool Load(const std::filesystem::path& path) {
     values.higher_hf_tick_rate =
         Read<bool>(patches_table, "patches", "higher_hf_tick_rate", "boolean",
                    values.higher_hf_tick_rate);
+    values.high_tick_rate_stairs_fix =
+        Read<bool>(patches_table, "patches", "high_tick_rate_stairs_fix", "boolean",
+                   values.high_tick_rate_stairs_fix);
     values.disable_motion_blur =
         Read<bool>(patches_table, "patches", "disable_motion_blur", "boolean",
                    values.disable_motion_blur);
     values.realtime_texture_morphing =
         Read<bool>(patches_table, "patches", "realtime_texture_morphing", "boolean",
                    values.realtime_texture_morphing);
+    values.disable_texture_morphing =
+        Read<bool>(patches_table, "patches", "disable_texture_morphing", "boolean",
+                   values.disable_texture_morphing);
     values.hero_dog_texture_readback =
         Read<bool>(patches_table, "patches", "hero_dog_texture_readback", "boolean",
                    values.hero_dog_texture_readback);

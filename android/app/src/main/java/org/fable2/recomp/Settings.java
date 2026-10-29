@@ -55,6 +55,15 @@ final class Settings {
     int resolutionScale() { return prefs.getInt("resolution_scale", 1); }
     boolean msaa() { return prefs.getBoolean("msaa", false); }
     boolean tripleBuffering() { return prefs.getBoolean("triple_buffering", false); }
+    boolean skipIntros() { return prefs.getBoolean("skip_intros", false); }
+    boolean lowLatency() { return prefs.getBoolean("low_latency", true); }
+    boolean fxaa() { return prefs.getBoolean("fxaa", true); }
+    boolean fineFoliage() { return prefs.getBoolean("fine_foliage", true); }
+    String driver() {
+        String id = prefs.getString("gpu_driver", bundledDriver() ? BUNDLED_DRIVER : "");
+        return id.equals("") || id.equals(BUNDLED_DRIVER) || id.matches("download-[a-f0-9]{64}") ? id : BUNDLED_DRIVER;
+    }
+    void setDriver(String id) { prefs.edit().putString("gpu_driver", id).apply(); }
     boolean bundledDriver() { return prefs.getBoolean("bundled_driver", true); }
     boolean logFps() { return prefs.getBoolean("log_fps", false); }
     int touchMode() { return prefs.getInt("touch_mode", TOUCH_AUTO); }
@@ -100,7 +109,11 @@ final class Settings {
         managed.put("draw_resolution_scale_y", Integer.toString(scale));
         managed.put("fable2_disable_msaa", msaa() ? "false" : "true");
         managed.put("vulkan_max_frames_in_flight", tripleBuffering() ? "3" : "2");
-        managed.put("vulkan_android_custom_driver", bundledDriver() ? "\"" + BUNDLED_DRIVER + "\"" : "\"\"");
+        managed.put("fable2_skip_intros", skipIntros() ? "true" : "false");
+        managed.put("guest_max_frames_ahead", lowLatency() ? "1" : "0");
+        managed.put("swap_post_effect", fxaa() ? "\"fxaa\"" : "\"none\"");
+        managed.put("spirv_alpha_to_coverage_1x_bayer", fineFoliage() ? "true" : "false");
+        managed.put("vulkan_android_custom_driver", "\"" + driver() + "\"");
         managed.put("log_guest_fps_seconds", logFps() ? "5" : "0");
 
         File config = new File(storage, "fable_2.toml");
