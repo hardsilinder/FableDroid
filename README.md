@@ -24,11 +24,11 @@ instruction: the game runs as a native Android app.
 
 Playable. The game boots, loads saves and runs at its 30 FPS cap on a Snapdragon 8 Gen 2
 handheld with the default settings. A handful of graphics bugs remain (see
-[Known issues](#known-issues)). This is an early, unofficial fan project.
+[Known issues](#known-issues)). This is a beta of an unofficial fan project.
 
 | | |
 |---|---|
-| Version | [1.0.0](https://github.com/hardsilinder/FableDroid/releases/latest) (early release) |
+| Version | [0.6.0 beta](https://github.com/hardsilinder/FableDroid/releases/latest) |
 | Primary test device | AYN Thor, Snapdragon 8 Gen 2 / Adreno 740, Android 13 |
 | Performance | Median 29.9 FPS at native 720p, game's 30 FPS cap |
 | Game versions | Fable II Game of the Year: USA/Europe, Germany, France, Italy, Russia, Spain |
@@ -120,7 +120,7 @@ version it detected.
 No PC or build tools needed.
 
 1. **Download the APK** from the [latest release](https://github.com/hardsilinder/FableDroid/releases/latest)
-   (`FableDroid-1.0.0.apk`) on your device and open it. Allow installing from your browser
+   (`FableDroid-0.6.0-beta.apk`) on your device and open it. Allow installing from your browser
    or file manager if Android asks.
 2. **Copy your Fable II ISO to the device**, for example into `Download`, over USB,
    microSD or a network share.

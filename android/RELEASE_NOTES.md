@@ -1,12 +1,12 @@
-# Fable II for Android 1.0.0
+# FableDroid 0.6.0 beta
 
-<!-- Draft text for the GitHub release. Attach Fable2-Android-1.0.0-release.apk. -->
+<!-- Draft text for the GitHub release. Attach FableDroid-0.6.0-beta.apk. -->
 
 A native Android build of the Fable II recompilation. **Bring your own game:** you need
 an ISO of a supported Fable II disc. The APK contains no game content.
 
 ## Install
-1. Download **Fable2-Android-1.0.0-release.apk** below and install it.
+1. Download **FableDroid-0.6.0-beta.apk** below and install it.
 2. Copy your Fable II ISO to the device.
 3. Open the app, tap **Select game ISO**, choose the file and wait for it to install.
 4. Tap **Play**.

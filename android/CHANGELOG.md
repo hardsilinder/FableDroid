@@ -6,9 +6,9 @@
 
 # Android changelog
 
-## 1.0.0 — 2026-10-28
+## 0.6.0 beta — 2026-10-29
 
-First public Android release.
+First public Android release (beta). Published briefly as 1.0.0 on 2026-10-28, then relabelled.
 
 ### Added
 - New launcher with a two-pane layout, game status card and gamepad navigation.
