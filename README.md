@@ -28,7 +28,7 @@ handheld with the default settings. A handful of graphics bugs remain (see
 
 | | |
 |---|---|
-| Version | [0.6.0 beta](https://github.com/hardsilinder/FableDroid/releases/latest) |
+| Version | [0.6.1 beta](https://github.com/hardsilinder/FableDroid/releases/latest) |
 | Primary test device | AYN Thor, Snapdragon 8 Gen 2 / Adreno 740, Android 13 |
 | Performance | Median 29.9 FPS at native 720p, game's 30 FPS cap |
 | Game versions | Fable II Game of the Year: USA/Europe, Germany, France, Italy, Russia, Spain |
@@ -120,7 +120,7 @@ version it detected.
 No PC or build tools needed.
 
 1. **Download the APK** from the [latest release](https://github.com/hardsilinder/FableDroid/releases/latest)
-   (`FableDroid-0.6.0-beta.apk`) on your device and open it. Allow installing from your browser
+   (`FableDroid-0.6.1-beta.apk`) on your device and open it. Allow installing from your browser
    or file manager if Android asks.
 2. **Copy your Fable II ISO to the device**, for example into `Download`, over USB,
    microSD or a network share.
@@ -185,8 +185,8 @@ on current handhelds. Details: [docs/ANDROID_PERFORMANCE.md](docs/ANDROID_PERFOR
   off, the hero and dog use their base skin.
 - **Black items in the "take item" preview** (opening a chest) were reported on
   2026-10-29. The exponent fix above may cover it, but it hasn't been confirmed yet.
-- **Purple strip along the bottom of the screen** in some scenes, and corrupted lower
-  screen when the camera is pressed against a wall.
+- **Corrupted lower screen** when the camera is pressed against a wall. (The purple strip
+  along the bottom of the screen is fixed in 0.6.1.)
 - **Jumbled loading-screen text** seen in some runs with morphing on.
 - Morphing on only: the face can look slightly off, and makeup is not rendered correctly
   (same limitation as the Xenia patch this setting is based on).
@@ -203,8 +203,8 @@ on current handhelds. Details: [docs/ANDROID_PERFORMANCE.md](docs/ANDROID_PERFOR
 - Only the versions in the table above are supported; others crash or misbehave.
 
 <p>
-  <img src="docs/screenshots/fabledroid-dungeon.jpg" width="60%" alt="Dungeon scene showing the purple strip at the bottom of the frame">
-  <br><sub>A dungeon on the Thor. The purple strip at the bottom edge is a known bug.</sub>
+  <img src="docs/screenshots/fabledroid-dungeon.jpg" width="60%" alt="Dungeon scene in 0.6.0 showing the purple strip at the bottom of the frame">
+  <br><sub>A dungeon on the Thor in 0.6.0. The purple strip at the bottom edge is fixed in 0.6.1.</sub>
 </p>
 
 ---
