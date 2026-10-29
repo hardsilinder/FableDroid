@@ -28,7 +28,7 @@ handheld with the default settings. A handful of graphics bugs remain (see
 
 | | |
 |---|---|
-| Version | 1.0.0 (pre-release) |
+| Version | [1.0.0](https://github.com/hardsilinder/FableDroid/releases/latest) (pre-release) |
 | Primary test device | AYN Thor, Snapdragon 8 Gen 2 / Adreno 740, Android 13 |
 | Performance | Median 29.9 FPS at native 720p, game's 30 FPS cap |
 | Game versions | Fable II Game of the Year: USA/Europe, Germany, France, Italy, Russia, Spain |
@@ -117,11 +117,11 @@ version it detected.
 
 ## Installing
 
-FableDroid is currently built from source (see [Building from source](#building-from-source)).
-The recompiled game code is generated from your own `default.xex` at build time.
+No PC or build tools needed.
 
-1. **Build and install the APK** with `adb install Fable2-Android-1.0.0-<type>.apk`, or copy
-   it to the device and open it. Allow installing from your file manager if Android asks.
+1. **Download the APK** from the [latest release](https://github.com/hardsilinder/FableDroid/releases/latest)
+   (`FableDroid-1.0.0.apk`) on your device and open it. Allow installing from your browser
+   or file manager if Android asks.
 2. **Copy your Fable II ISO to the device**, for example into `Download`, over USB,
    microSD or a network share.
 3. **Open the app** (it appears as *Fable II*), tap **Select game ISO** and choose the file.
@@ -211,7 +211,7 @@ on current handhelds. Details: [docs/ANDROID_PERFORMANCE.md](docs/ANDROID_PERFOR
 
 ## Building from source
 
-You need a Mac (Apple Silicon) or Linux host, the Android SDK with NDK
+Only needed if you want to change the code. You need a Mac (Apple Silicon) or Linux host, the Android SDK with NDK
 **29.0.14206865**, CMake 3.25+, Ninja, JDK 21, Python 3, and a supported `default.xex`
 in the project root (code generation reads it at build time).
 

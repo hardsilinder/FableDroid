@@ -94,8 +94,8 @@ tells you which version it detected.
 
 ## Installing
 
-1. **Install the APK.** Build the APK (see below) or, once one is published, download `Fable2-Android-<version>-release.apk` from the
-   [Releases](../../releases) page and open it on the device. Allow installing from
+1. **Install the APK.** Download `FableDroid-<version>.apk` from the
+   [Releases](https://github.com/hardsilinder/FableDroid/releases) page and open it on the device. Allow installing from
    your browser or file manager if Android asks.
 2. **Copy your ISO to the device.** Any folder works, for example `Download`. Use USB,
    a microSD card, or a network share.
