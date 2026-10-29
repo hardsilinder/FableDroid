@@ -319,3 +319,9 @@ The bundled driver remains available. Failed downloads or validation leave the s
 ### Development benchmarks
 
 Debug APKs accept `--ez benchmark true` on LauncherActivity to start the game without rewriting the benchmark TOML. Release APKs ignore it. This path enables touch controls for the existing test harness without changing saved preferences. Use `THOR_BENCHMARK=1` with the workspace preservation wrapper; keep its save/config backup and restoration checks. This is a test facility, not a release performance setting.
+
+### GPU recommendations
+
+The GPU drivers screen detects the system renderer and shows a Recommended section. Bundled Turnip is tested on AYN Thor / Adreno 740; other Adreno 7xx devices are experimental. Adreno 6xx and 8xx default to System, with matching Turnip downloads offered as experimental alternatives. The matching list excludes patched and OneUI-specific variants; All packages retains manual access. Recommendations indicate family compatibility, not measured performance or guaranteed game support.
+
+Mali, Immortalis, PowerVR, Xclipse, other GPUs and unknown hardware receive a System recommendation explicitly marked experimental. This launcher currently has no verified custom downloads for those families. Existing manual selections are preserved.
