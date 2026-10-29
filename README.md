@@ -246,3 +246,20 @@ the APK with Gradle.
   game patch.
 - **Mesa Turnip** (MIT), **libadrenotools** (BSD 2-Clause, © Billy Laws), **SDL3** (zlib).
 - This project's own code is under the MIT license in [LICENSE](LICENSE).
+
+### How FableDroid was made
+
+The Android port was directed and play-tested by [hardsilinder](https://github.com/hardsilinder)
+and written with AI coding agents, which did the coding, on-device testing and
+debugging. Every result in this README was measured on real hardware.
+
+| Model | Work sessions | Role |
+|---|---|---|
+| **Claude Opus 5.5** (Anthropic) | ~23 | Lead developer. The Android port itself (build system, launcher, ISO installer, touch controls and editor, remapping, driver manager), the Vulkan rendering fixes (missing world and cyan sky, black skin from the texture exponent bug), the performance work that took the game from ~15 FPS to the 30 FPS cap, low-latency frame pacing, the high tick rate and this README. |
+| **GPT-6.1 Sol** (OpenAI, via ChatGPT/Codex) | ~29 | Early Vulkan fixes (unused colour attachments, occlusion-query cleanup), code reviews during the cyan-sky and slowdown investigations (including finding that the transfer-skip diagnostic didn't actually skip transfers), the offline shader and frame-pacing reviews, the swap-timing capture and analyzer, and the save-preserving test harness. |
+| **GPT-6 Astra** (OpenAI, via ChatGPT/Codex) | ~15 | Shader-compilation diagnostics, the frame-timing build and its verification (32 offline tests), and the frames-in-flight comparison that settled on two frames in flight. |
+| Claude Sonnet 5 (Anthropic) | 2 | Small supporting tasks. |
+
+Session counts are approximate and include short review and status sessions. The commit
+history shows "claude" as a contributor because some upstream commits were made under
+Anthropic's shared commit identity.
