@@ -28,7 +28,7 @@ handheld with the default settings. A handful of graphics bugs remain (see
 
 | | |
 |---|---|
-| Version | [1.0.0](https://github.com/hardsilinder/FableDroid/releases/latest) (pre-release) |
+| Version | [1.0.0](https://github.com/hardsilinder/FableDroid/releases/latest) (early release) |
 | Primary test device | AYN Thor, Snapdragon 8 Gen 2 / Adreno 740, Android 13 |
 | Performance | Median 29.9 FPS at native 720p, game's 30 FPS cap |
 | Game versions | Fable II Game of the Year: USA/Europe, Germany, France, Italy, Russia, Spain |
