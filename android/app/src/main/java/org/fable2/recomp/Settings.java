@@ -60,11 +60,11 @@ final class Settings {
     boolean fxaa() { return prefs.getBoolean("fxaa", true); }
     boolean fineFoliage() { return prefs.getBoolean("fine_foliage", true); }
     String driver() {
-        String id = prefs.getString("gpu_driver", bundledDriver() ? BUNDLED_DRIVER : "");
-        return id.equals("") || id.equals(BUNDLED_DRIVER) || id.matches("download-[a-f0-9]{64}") ? id : BUNDLED_DRIVER;
+        return DriverPolicy.select(prefs.getString("gpu_driver", null),
+            prefs.contains("bundled_driver") ? prefs.getBoolean("bundled_driver", true) : null,
+            GpuDetector.renderer());
     }
     void setDriver(String id) { prefs.edit().putString("gpu_driver", id).apply(); }
-    boolean bundledDriver() { return prefs.getBoolean("bundled_driver", true); }
     boolean logFps() { return prefs.getBoolean("log_fps", false); }
     int touchMode() { return prefs.getInt("touch_mode", TOUCH_AUTO); }
     float touchOpacity() { return prefs.getFloat("touch_opacity", 0.6f); }

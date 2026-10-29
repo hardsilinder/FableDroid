@@ -18,6 +18,8 @@ public final class DriverActivity extends Activity {
         int pad=Ui.dp(this,24); content.setPadding(pad,pad,pad,pad); content.setBackgroundColor(Ui.BACKGROUND); scroll.addView(content); setContentView(scroll);
         content.addView(Ui.title(this,"GPU drivers"));
         content.addView(Ui.text(this,"Choose a driver for the next game launch. Turnip is for supported Adreno GPUs; use System on other GPUs. Gen8 packages target Adreno 8xx. A newer driver may not run faster.",14,Ui.MUTED,false));
+        String renderer = GpuDetector.renderer();
+        content.addView(Ui.text(this, "Detected GPU: " + (renderer.isEmpty() ? "Unknown (System recommended)" : renderer), 14, Ui.MUTED, false));
         String selected = settings.driver();
         String label = selected.isEmpty() ? "System driver" : "Bundled Turnip";
         if (selected.startsWith("download-")) try { label=DriverStore.validate(new File(getFilesDir(),"gpu_drivers/"+selected)); }
