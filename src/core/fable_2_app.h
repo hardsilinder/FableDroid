@@ -203,6 +203,17 @@ class Fable2App : public rex::ReXApp {
       }
     }
 
+    // Purple bottom strip (ANDROID_STATUS.md, 2026-10-29): those clear quads are
+    // unclipped, so without running their vertex shader on the CPU they are
+    // assumed to cover the whole EDRAM. The 280x180 4x depth one only reaches
+    // row 176, and the stale rows below it (morph pass data) reached the screen.
+    if (rex::cvar::GetFlagSource("execute_unclipped_draw_vs_on_cpu") ==
+        rex::cvar::Source::kDefault) {
+      if (rex::cvar::SetFlagByName("execute_unclipped_draw_vs_on_cpu", "true")) {
+        REXSYS_INFO("[fable2-config] seeded execute_unclipped_draw_vs_on_cpu=true");
+      }
+    }
+
     // Performance (measured on Adreno 740, gameplay 4.5 -> 7.2 fps, visuals
     // unchanged): upload shared memory ahead of the frame's command buffer
     // instead of breaking render passes for in-order uploads, and don't block

@@ -1998,7 +1998,7 @@ index dcbcbbc..e2d3f99 100644
          auto vgt_output_path_cntl = register_file_->Get<reg::VGT_OUTPUT_PATH_CNTL>();
          auto vgt_hos_cntl = register_file_->Get<reg::VGT_HOS_CNTL>();
 diff --git a/src/graphics/pipeline/render_target/cache.cpp b/src/graphics/pipeline/render_target/cache.cpp
-index 953c5fd..0f190c9 100644
+index 953c5fd..01905e9 100644
 --- a/src/graphics/pipeline/render_target/cache.cpp
 +++ b/src/graphics/pipeline/render_target/cache.cpp
 @@ -10,12 +10,16 @@
@@ -2018,7 +2018,7 @@ index 953c5fd..0f190c9 100644
  
  #include <rex/assert.h>
  #include <rex/cvar.h>
-@@ -41,8 +45,69 @@ REXCVAR_DEFINE_BOOL(direct_host_resolve, true, "GPU",
+@@ -41,8 +45,126 @@ REXCVAR_DEFINE_BOOL(direct_host_resolve, true, "GPU",
                      "Resolve from host render targets directly to shared memory when possible")
      .lifecycle(rex::cvar::Lifecycle::kHotReload);
  
@@ -2038,9 +2038,66 @@ index 953c5fd..0f190c9 100644
 +                      "transfers into the depth target of such draws are skipped since every "
 +                      "sample is overwritten.");
 +
++REXCVAR_DEFINE_INT32(rt_transfer_log_d2c_pitch, 0, "GPU",
++                     "RTDIAG: log distinct depth->color ownership transfers into color render "
++                     "targets with this pitch (tiles at 32bpp; 0 = off)");
++REXCVAR_DEFINE_STRING(rt_transfer_skip_d2c_pitches, "", "GPU",
++                      "RTDIAG: comma-separated destination pitches (tiles at 32bpp) of color "
++                      "render targets whose depth->color ownership transfers are skipped");
++
++REXCVAR_DEFINE_STRING(rt_clear_quad_skip_targets, "", "GPU", "RTDIAG: comma-separated render target pitches (tiles at 32bpp), optionally with an MSAA suffix like 7m2, for which full-surface clear quads keep their ownership transfers");
++REXCVAR_DEFINE_BOOL(rt_clear_quad_log, false, "GPU", "RTDIAG: log distinct full-surface clear quads that drop ownership transfers");
 +namespace {
++bool RtClearQuadSkipTarget(uint32_t pitch, uint32_t msaa) {
++  static std::string parsed_source;
++  static std::vector<std::pair<uint32_t, int32_t>> targets;
++  const std::string& source = REXCVAR_GET(rt_clear_quad_skip_targets);
++  if (source.empty()) return false;
++  if (source != parsed_source) {
++    parsed_source = source;
++    targets.clear();
++    size_t pos = 0;
++    while (pos < source.size()) {
++      size_t end = source.find(',', pos);
++      if (end == std::string::npos) end = source.size();
++      std::string token = source.substr(pos, end - pos);
++      if (!token.empty()) {
++        size_t m = token.find('m');
++        targets.emplace_back(uint32_t(std::strtoul(token.c_str(), nullptr, 10)),
++                             m == std::string::npos
++                                 ? -1
++                                 : int32_t(std::strtol(token.c_str() + m + 1, nullptr, 10)));
++      }
++      pos = end + 1;
++    }
++  }
++  for (const auto& t : targets) {
++    if (t.first == pitch && (t.second < 0 || uint32_t(t.second) == msaa)) return true;
++  }
++  return false;
++}
++bool RtTransferSkipD2CPitch(uint32_t dst_pitch) {
++  static std::string parsed_source;
++  static std::vector<uint32_t> pitches;
++  const std::string& source = REXCVAR_GET(rt_transfer_skip_d2c_pitches);
++  if (source.empty()) return false;
++  if (source != parsed_source) {
++    parsed_source = source;
++    pitches.clear();
++    size_t pos = 0;
++    while (pos < source.size()) {
++      size_t end = source.find(',', pos);
++      if (end == std::string::npos) end = source.size();
++      std::string token = source.substr(pos, end - pos);
++      if (!token.empty()) pitches.push_back(uint32_t(std::strtoul(token.c_str(), nullptr, 10)));
++      pos = end + 1;
++    }
++  }
++  return std::find(pitches.begin(), pitches.end(), dst_pitch) != pitches.end();
++}
 +bool RtTransferSkipped(bool src_depth, uint32_t src_fmt, bool dst_depth, uint32_t dst_fmt,
-+                       uint32_t src_msaa = 0, uint32_t dst_msaa = 0) {
++                       uint32_t src_msaa = 0, uint32_t dst_msaa = 0, uint32_t dst_pitch = 0) {
++  if (src_depth && !dst_depth && RtTransferSkipD2CPitch(dst_pitch)) return true;
 +  int32_t m = REXCVAR_GET(rt_transfer_skip_mask);
 +  if (!m) return false;
 +  if (src_depth && !dst_depth) return (m & 1) != 0;
@@ -2088,7 +2145,7 @@ index 953c5fd..0f190c9 100644
  void RenderTargetCache::GetPSIColorFormatInfo(xenos::ColorRenderTargetFormat format,
                                                uint32_t write_mask, float& clamp_rgb_low,
                                                float& clamp_alpha_low, float& clamp_rgb_high,
-@@ -695,6 +760,110 @@ bool RenderTargetCache::Update(bool is_rasterization_done,
+@@ -695,6 +817,237 @@ bool RenderTargetCache::Update(bool is_rasterization_done,
      return true;
    }
  
@@ -2103,6 +2160,60 @@ index 953c5fd..0f190c9 100644
 +    bool overwrites_all =
 +        regs.Get<reg::VGT_DRAW_INITIATOR>().prim_type == xenos::PrimitiveType::kRectangleList &&
 +        (regs[XE_GPU_REG_PA_SC_AA_MASK] & aa_mask_needed) == aa_mask_needed;
++    // Ownership may be taken far beyond what the quad draws (the extent estimator
++    // can't bound a clear quad's vertices, so up to the whole EDRAM is claimed),
++    // so only the whole tile rows the quad actually covers may drop their
++    // transfers - the rest must keep their previous contents.
++    uint32_t covered_tiles_at_32bpp = 0;
++    if (overwrites_all) {
++      draw_util::Scissor scissor;
++      draw_util::GetScissor(regs, scissor);
++      uint32_t surface_pitch = rb_surface_info.surface_pitch;
++      uint32_t covered_height = height_used;
++      if (scissor.offset[0] != 0 || scissor.offset[1] != 0 ||
++          scissor.extent[0] < surface_pitch) {
++        overwrites_all = false;
++      }
++      covered_height = std::min(covered_height, scissor.offset[1] + scissor.extent[1]);
++      auto pa_cl_vte_cntl = regs.Get<reg::PA_CL_VTE_CNTL>();
++      if (overwrites_all && pa_cl_vte_cntl.vport_y_scale_ena) {
++        float x_scale = pa_cl_vte_cntl.vport_x_scale_ena
++                            ? std::abs(regs.Get<float>(XE_GPU_REG_PA_CL_VPORT_XSCALE))
++                            : 1.0f;
++        float x_offset = pa_cl_vte_cntl.vport_x_offset_ena
++                             ? regs.Get<float>(XE_GPU_REG_PA_CL_VPORT_XOFFSET)
++                             : 0.0f;
++        float y_scale = pa_cl_vte_cntl.vport_y_scale_ena
++                            ? std::abs(regs.Get<float>(XE_GPU_REG_PA_CL_VPORT_YSCALE))
++                            : 1.0f;
++        float y_offset = pa_cl_vte_cntl.vport_y_offset_ena
++                             ? regs.Get<float>(XE_GPU_REG_PA_CL_VPORT_YOFFSET)
++                             : 0.0f;
++        if (regs.Get<reg::PA_SU_SC_MODE_CNTL>().vtx_window_offset_enable) {
++          auto window_offset = regs.Get<reg::PA_SC_WINDOW_OFFSET>();
++          x_offset += float(window_offset.window_x_offset);
++          y_offset += float(window_offset.window_y_offset);
++        }
++        // With clipping disabled the quad may extend past the viewport, which
++        // is still fine for the lower bound of what it covers.
++        if (!regs.Get<reg::PA_CL_CLIP_CNTL>().clip_disable) {
++          overwrites_all = x_offset - x_scale <= 0.5f && x_offset + x_scale >= float(surface_pitch);
++        }
++        overwrites_all = overwrites_all && y_offset - y_scale <= 0.5f;
++        float y_end = y_offset + y_scale;
++        covered_height = y_end <= 0.0f
++                             ? 0
++                             : std::min(covered_height, uint32_t(std::min(y_end, 16384.0f)));
++      }
++      if (overwrites_all) {
++        uint32_t covered_rows =
++            (covered_height << uint32_t(msaa_samples >= xenos::MsaaSamples::k2X)) /
++            xenos::kEdramTileHeightSamples;
++        covered_tiles_at_32bpp = std::min(covered_rows * pitch_tiles_at_32bpp,
++                                          uint32_t(xenos::kEdramTileCount));
++        overwrites_all = covered_tiles_at_32bpp != 0;
++      }
++    }
 +    if (overwrites_all && (depth_and_color_rts_used_bits & 1)) {
 +      auto depth_control = regs.Get<reg::RB_DEPTHCONTROL>();
 +      auto stencil_ref_mask = regs.Get<reg::RB_STENCILREFMASK>();
@@ -2149,9 +2260,82 @@ index 953c5fd..0f190c9 100644
 +                         blend_control.alpha_comb_fcn == xenos::BlendOp::kAdd;
 +      }
 +    }
++    if (overwrites_all &&
++        RtClearQuadSkipTarget(pitch_tiles_at_32bpp, uint32_t(msaa_samples))) {
++      overwrites_all = false;
++    }
++    if (overwrites_all && REXCVAR_GET(rt_clear_quad_log)) {
++      static std::vector<uint64_t> logged;
++      uint64_t sig = uint64_t(pitch_tiles_at_32bpp) | (uint64_t(msaa_samples) << 12) |
++                     (uint64_t(height_used) << 16) |
++                     (uint64_t(depth_and_color_rts_used_bits) << 32) |
++                     (uint64_t(edram_bases_sorted[0].first) << 40);
++      if (logged.size() < 200 && std::find(logged.begin(), logged.end(), sig) == logged.end()) {
++        logged.push_back(sig);
++        std::string xf;
++        for (uint32_t i = 0; i < 1 + xenos::kMaxColorRenderTargets; ++i) {
++          for (const Transfer& t : last_update_transfers_[i]) {
++            xf += fmt::format(" rt{}<b{} p{} m{} f{} d{} t{}..{}>", i, t.source->key().base_tiles,
++                              t.source->key().pitch_tiles_at_32bpp,
++                              uint32_t(t.source->key().msaa_samples),
++                              t.source->key().resource_format, t.source->key().is_depth,
++                              t.start_tiles, t.end_tiles);
++          }
++        }
++        REXGPU_INFO("CQDROP base={} pitch={} msaa={} height_used={} covered={} rts={:X} len={} drops:{}",
++                    edram_bases_sorted[0].first, pitch_tiles_at_32bpp, uint32_t(msaa_samples),
++                    height_used, covered_tiles_at_32bpp, depth_and_color_rts_used_bits,
++                    rt_lengths_tiles[0], xf);
++      }
++    }
 +    if (overwrites_all) {
 +      for (uint32_t i = 0; i < 1 + xenos::kMaxColorRenderTargets; ++i) {
-+        last_update_transfers_[i].clear();
++        std::vector<Transfer>& transfers = last_update_transfers_[i];
++        if (transfers.empty()) {
++          continue;
++        }
++        // Covered EDRAM range of this render target, wrapping around the EDRAM.
++        uint32_t covered_length = std::min(
++            covered_tiles_at_32bpp << ((rts_are_64bpp >> i) & 1), uint32_t(xenos::kEdramTileCount));
++        uint32_t covered_start = rt_keys[i].base_tiles;
++        uint32_t covered_ranges[2][2];
++        uint32_t covered_range_count = 1;
++        covered_ranges[0][0] = covered_start;
++        covered_ranges[0][1] = std::min(covered_start + covered_length,
++                                        uint32_t(xenos::kEdramTileCount));
++        if (covered_start + covered_length > xenos::kEdramTileCount) {
++          covered_ranges[1][0] = 0;
++          covered_ranges[1][1] = covered_start + covered_length - xenos::kEdramTileCount;
++          covered_range_count = 2;
++        }
++        std::vector<Transfer> kept;
++        for (const Transfer& t : transfers) {
++          // Subtract the covered ranges (sorted by start after the swap) from the transfer.
++          uint32_t pieces[3][2];
++          uint32_t piece_count = 0;
++          uint32_t cursor = t.start_tiles;
++          for (uint32_t r = covered_range_count; r-- > 0;) {
++            uint32_t cs = covered_ranges[r][0], ce = covered_ranges[r][1];
++            if (ce <= cursor || cs >= t.end_tiles) {
++              continue;
++            }
++            if (cs > cursor) {
++              pieces[piece_count][0] = cursor;
++              pieces[piece_count][1] = cs;
++              ++piece_count;
++            }
++            cursor = std::max(cursor, ce);
++          }
++          if (cursor < t.end_tiles) {
++            pieces[piece_count][0] = cursor;
++            pieces[piece_count][1] = t.end_tiles;
++            ++piece_count;
++          }
++          for (uint32_t p = 0; p < piece_count; ++p) {
++            kept.emplace_back(pieces[p][0], pieces[p][1], t.source, t.host_depth_source);
++          }
++        }
++        transfers = std::move(kept);
 +      }
 +    }
 +  }
@@ -2199,7 +2383,7 @@ index 953c5fd..0f190c9 100644
    // If everything succeeded, update the used render targets.
    for (uint32_t i = 0; i < 1 + xenos::kMaxColorRenderTargets; ++i) {
      last_update_used_render_targets_[i] =
-@@ -1213,7 +1382,10 @@ bool RenderTargetCache::WouldOwnershipChangeRequireTransfers(RenderTargetKey des
+@@ -1213,7 +1566,11 @@ bool RenderTargetCache::WouldOwnershipChangeRequireTransfers(RenderTargetKey des
        // Only perform the transfer when actually changing the latest owner, not
        // just the latest host depth owner - the transfer source is expected to
        // be different than the destination.
@@ -2207,11 +2391,12 @@ index 953c5fd..0f190c9 100644
 +      if (!transfer_source.IsEmpty() && transfer_source != dest &&
 +            !RtTransferSkipped(bool(transfer_source.is_depth), uint32_t(transfer_source.resource_format),
 +                               bool(dest.is_depth), uint32_t(dest.resource_format),
-+                               uint32_t(transfer_source.msaa_samples), uint32_t(dest.msaa_samples))) {
++                               uint32_t(transfer_source.msaa_samples), uint32_t(dest.msaa_samples),
++                               uint32_t(dest.pitch_tiles_at_32bpp))) {
          return true;
        }
      }
-@@ -1294,7 +1466,11 @@ void RenderTargetCache::ChangeOwnership(RenderTargetKey dest, uint32_t start_til
+@@ -1294,8 +1651,32 @@ void RenderTargetCache::ChangeOwnership(RenderTargetKey dest, uint32_t start_til
          // Only perform the copying when actually changing the latest owner, not
          // just the latest host depth owner - the transfer source is expected to
          // be different than the destination.
@@ -2220,10 +2405,31 @@ index 953c5fd..0f190c9 100644
 +            !RtTransferSkipped(bool(transfer_source.is_depth),
 +                               uint32_t(transfer_source.resource_format), bool(dest.is_depth),
 +                               uint32_t(dest.resource_format), uint32_t(transfer_source.msaa_samples),
-+                               uint32_t(dest.msaa_samples))) {
++                               uint32_t(dest.msaa_samples), uint32_t(dest.pitch_tiles_at_32bpp))) {
            uint32_t transfer_end_tiles = std::min(it->second.end_tiles, extent_end);
++          if (transfer_source.is_depth && !dest.is_depth &&
++              REXCVAR_GET(rt_transfer_log_d2c_pitch) != 0 &&
++              uint32_t(dest.pitch_tiles_at_32bpp) ==
++                  uint32_t(REXCVAR_GET(rt_transfer_log_d2c_pitch))) {
++            static std::unordered_set<uint64_t> d2c_logged;
++            uint64_t d2c_id = (uint64_t(transfer_source.key) << 32) ^ dest.key ^
++                              (uint64_t(it->first) << 12) ^ (uint64_t(transfer_end_tiles) << 44);
++            if (d2c_logged.size() < 400 && d2c_logged.insert(d2c_id).second) {
++              REXGPU_INFO(
++                  "D2CXFER src(b{} p{} msaa{} f{}) -> dst(b{} p{} msaa{} f{}) tiles {}..{} "
++                  "extent {}..{} cutout {}",
++                  uint32_t(transfer_source.base_tiles),
++                  uint32_t(transfer_source.pitch_tiles_at_32bpp),
++                  uint32_t(transfer_source.msaa_samples),
++                  uint32_t(transfer_source.resource_format), uint32_t(dest.base_tiles),
++                  uint32_t(dest.pitch_tiles_at_32bpp), uint32_t(dest.msaa_samples),
++                  uint32_t(dest.resource_format), it->first, transfer_end_tiles, extent_start,
++                  extent_end, resolve_clear_cutout != nullptr);
++            }
++          }
            if (!resolve_clear_cutout ||
                Transfer::GetRangeRectangles(it->first, transfer_end_tiles, dest.base_tiles,
+                                            dest_pitch_tiles, dest.msaa_samples, dest_is_64bpp,
 diff --git a/src/graphics/pipeline/shader/spirv_builder.cpp b/src/graphics/pipeline/shader/spirv_builder.cpp
 index fe0aa4e..1828308 100644
 --- a/src/graphics/pipeline/shader/spirv_builder.cpp
