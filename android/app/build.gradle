@@ -14,10 +14,11 @@ android {
     compileSdk 35
     defaultConfig {
         applicationId 'org.fable2.recomp'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         minSdk 31
         targetSdk 35
-        versionCode 4
-        versionName '0.6.1-beta'
+        versionCode 5
+        versionName '0.6.2-beta'
         ndk { abiFilters 'arm64-v8a' }
     }
     buildFeatures { buildConfig true }
@@ -52,6 +53,8 @@ android {
 }
 
 dependencies {
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'junit:junit:4.13.2'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.json:json:20240303'
 }

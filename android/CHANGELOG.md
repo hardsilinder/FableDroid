@@ -1,10 +1,16 @@
-## Unreleased
-
-- Added launcher GPU driver downloads, SHA-256 verification, bounded installation, installed-driver selection, and system/bundled fallback choices.
-- Added a debug-only benchmark launch path that preserves test configuration and enables test touch controls without changing preferences.
-- Corrected triple-buffering wording: input-to-display latency has not been measured.
-
 # Android changelog
+
+## 0.6.2 beta — 2026-10-29
+
+### Added
+- Launcher GPU driver downloads, SHA-256 verification, bounded installation, installed-driver selection, and system/bundled fallback choices.
+- GPU detection chooses the default driver automatically: bundled Turnip for Adreno 7xx, System for Adreno 8xx and other/unknown GPUs. Manual choices are preserved.
+- Recommended section in GPU drivers/downloads showing the detected GPU and a matching download; Mali, Immortalis, PowerVR, Xclipse and unknown GPUs get a System recommendation marked experimental.
+- A debug-only benchmark launch path that preserves test configuration and enables test touch controls without changing preferences.
+- Device test exercising GPU detection, the live driver catalog, download and checksum verification on real hardware.
+
+### Changed
+- Corrected triple-buffering wording: input-to-display latency has not been measured.
 
 ## 0.6.0 beta — 2026-10-29
 
