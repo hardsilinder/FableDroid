@@ -253,7 +253,7 @@ public final class LauncherActivity extends Activity {
         }
         GameVersions.Version v = ready ? GameVersions.find(hash) : null;
         if (!ready) version.setText("Select your Fable II disc image to begin.");
-        else if (v == null) { version.setText("Unrecognised game executable. It may not start."); version.setTextColor(Ui.WARN); }
+        else if (v == null) { version.setText("Unrecognised game executable (ID " + hash.substring(0, Math.min(12, hash.length())) + "). It may not start; please include this ID when reporting."); version.setTextColor(Ui.WARN); }
         else if (!v.supported) { version.setText(v.name + ": " + v.message); version.setTextColor(Ui.BAD); }
         else { version.setText("Detected: Fable II " + v.name); version.setTextColor(Ui.MUTED); }
         if (ready) playButton.requestFocus(); else isoButton.requestFocus();

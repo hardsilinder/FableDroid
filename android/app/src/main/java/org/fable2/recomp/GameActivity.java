@@ -91,8 +91,7 @@ public final class GameActivity extends SDLActivity {
     private static int controllerDevice() {
         for (int id : InputDevice.getDeviceIds()) {
             InputDevice device = InputDevice.getDevice(id);
-            if (device != null && (device.supportsSource(InputDevice.SOURCE_GAMEPAD)
-                    || device.supportsSource(InputDevice.SOURCE_JOYSTICK))) return id;
+            if (device != null && !device.isVirtual() && SDLControllerManager.isDeviceSDLJoystick(id)) return id;
         }
         return -1;
     }

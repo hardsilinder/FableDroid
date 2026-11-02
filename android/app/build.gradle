@@ -39,7 +39,6 @@ android {
         }
     }
     sourceSets.main {
-        java.srcDir '../../thirdparty/rexglue-sdk/thirdparty/sdl3/android-project/app/src/main/java'
         jniLibs.srcDir 'src/main/jniLibs'
     }
     compileOptions {
