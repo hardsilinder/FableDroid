@@ -1,5 +1,14 @@
 # Android changelog
 
+## 0.6.3 beta — 2026-11-02
+
+### Fixed
+- On-screen touch controls did nothing on some phones (e.g. Poco F7 / HyperOS, Snapdragon 8s Gen 4), so the game stayed on "Press A to start" (#3). A built-in key device that reports a d-pad was being treated as a gamepad and received the touch presses. Only real gamepads (analog sticks, or gamepad buttons with A) now count as controllers.
+
+### Changed
+- "Unrecognised game executable" now shows a short ID of the file, to include when reporting (#4).
+- Device test checking that only real gamepads are treated as controllers.
+
 ## 0.6.2 beta — 2026-10-29
 
 ### Added
