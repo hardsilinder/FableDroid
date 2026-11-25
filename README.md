@@ -22,15 +22,18 @@ instruction: the game runs as a native Android app.
 
 ## Status
 
-Playable. The game boots, loads saves and runs at its 30 FPS cap on a Snapdragon 8 Gen 2
-handheld with the default settings. A handful of graphics bugs remain (see
-[Known issues](#known-issues)). This is a beta of an unofficial fan project.
+Playable and stable. About **99% of the game's code is now decompiled to native code**
+(59,958 of 60,481 functions). On a Snapdragon 8 Gen 2 handheld the game boots, loads saves and
+plays the full forest route with no crashes, at about 57 FPS with the new 60 FPS option or a
+steady 30 FPS at the default cap. A few bugs remain (see [Known issues](#known-issues)).
+This is an unofficial fan project.
 
 | | |
 |---|---|
-| Version | [0.6.3 beta](https://github.com/hardsilinder/FableDroid/releases/latest) |
+| Version | [0.9.0](https://github.com/hardsilinder/FableDroid/releases/latest) |
+| Decompiled to native code | 99.14% (59,958 / 60,481 functions): game code 99.54%, library code 98.47% |
 | Primary test device | AYN Thor, Snapdragon 8 Gen 2 / Adreno 740, Android 13 |
-| Performance | Median 29.9 FPS at native 720p, game's 30 FPS cap |
+| Performance | Native 720p: median about 57 FPS at the 60 FPS setting (lows about 37), or a locked 30 FPS at the default cap |
 | Game versions | Fable II Game of the Year: USA/Europe, Germany, France, Italy, Russia, Spain |
 
 ---
@@ -38,8 +41,12 @@ handheld with the default settings. A handful of graphics bugs remain (see
 ## What it can do
 
 **Runs the game natively**
-- Recompiled arm64 code with a Vulkan renderer tuned for Adreno 7xx.
-- Holds the game's 30 FPS cap on an Adreno 740 at 1x resolution.
+- About 99% of the game's functions are decompiled into readable native C++ and built for
+  arm64; the remaining ~520 still run through the recompiled path and are being rewritten
+  by hand.
+- Vulkan renderer tuned for Adreno 7xx.
+- Frame rate setting: 30 (the Xbox 360's cap, steadiest), 40 (even pacing on 120 Hz screens)
+  or 60. At 60 an Adreno 740 runs the forest at a median of about 57 FPS at 1x resolution.
 - Persistent shader and pipeline cache. Shaders compile once, then load at startup on
   later launches.
 - Optional intro-video skip.
@@ -120,7 +127,7 @@ version it detected.
 No PC or build tools needed.
 
 1. **Download the APK** from the [latest release](https://github.com/hardsilinder/FableDroid/releases/latest)
-   (`FableDroid-0.6.3-beta.apk`) on your device and open it. Allow installing from your browser
+   (`FableDroid-0.9.0.apk`) on your device and open it. Allow installing from your browser
    or file manager if Android asks.
 2. **Copy your Fable II ISO to the device**, for example into `Download`, over USB,
    microSD or a network share.
@@ -130,7 +137,8 @@ No PC or build tools needed.
 
 You can delete the ISO afterwards. The game files live in the app's own storage.
 
-**Updating:** install the new APK over the old one. Game files, saves and settings are kept.
+**Updating:** install the new APK over the old one (0.9.0 installs over 0.6.x as a normal
+update). Game files, saves and settings are kept.
 **Uninstalling deletes everything, including saves.** Use **Back up saves** first.
 
 > **Non-Adreno GPUs (Mali, Xclipse, PowerVR):** open **GPU drivers / downloads** and choose
@@ -145,11 +153,13 @@ Full settings, controls, file locations and troubleshooting:
 
 | Device | SoC / GPU | Android | Result |
 |---|---|---|---|
-| **AYN Thor** | Snapdragon 8 Gen 2 / Adreno 740 | 13 | **Main test device.** Boots, loads saves, plays. Median 29.9 FPS at 1x (30 FPS cap), frame-queue delay about 33 ms, occasional 38–54 ms frames. |
+| **AYN Thor** | Snapdragon 8 Gen 2 / Adreno 740 | 13 | **Main test device.** 0.9.0 boots, loads saves and plays the full forest route with no crashes. Median about 57 FPS at 1x with the 60 FPS setting (lows about 37); 30 FPS cap holds 29.9 with frame-queue delay about 33 ms. |
 | **OnePlus Open** | Snapdragon 8 Gen 2 / Adreno 740 | 16 (API 36) | Boots and plays on the cover display with touch controls, no crashes. Tested on 2026-10-22, before the latest graphics fixes; not re-benchmarked since. |
 
 Other Snapdragon 8 Gen 2 / 8 Gen 3 devices (AYN Odin 2, Retroid Pocket 5, Galaxy S23/S24,
-OnePlus 11/12…) should behave similarly but haven't been verified. Reports are welcome.
+OnePlus 11/12…) should behave similarly but haven't been verified. Adreno 8xx
+(Snapdragon 8 Elite / 8 Elite Gen 5, e.g. AYN Odin 3) and Mali are untested on 0.9.0.
+Reports are welcome.
 
 ### How performance was measured
 All Thor numbers come from the same save and the same scripted route (walking and turning
@@ -178,6 +188,8 @@ on current handhelds. Details: [docs/ANDROID_PERFORMANCE.md](docs/ANDROID_PERFOR
 ## Known issues
 
 **Graphics**
+- **Item wheel** in the on-screen display occasionally draws incorrectly (new in the 0.9.0
+  native-code builds; under investigation).
 - **Hero and dog skin morphing is off by default.** Fable II builds aged, scarred and
   tattooed skin textures on the GPU. A shader translation bug turned these textures
   black; it is fixed (the texture exponent was read from the wrong fetch-constant word),
@@ -192,6 +204,8 @@ on current handhelds. Details: [docs/ANDROID_PERFORMANCE.md](docs/ANDROID_PERFOR
   (same limitation as the Xenia patch this setting is based on).
 
 **Performance**
+- 40 and 60 FPS are experimental: smoother when standing or turning, but walking can cause
+  brief stutters. 30 is the steadiest.
 - Occasional slow frames of 38–54 ms while the GPU is near its limit.
 - Short hitches the first time an area is visited while shaders compile. They go away
   once cached.
